@@ -17,11 +17,11 @@
 
 #define GRAVITY 10.0f
 #define JUMP_VELOCITY 3.2f
-#define ACCELERATION 10.0f
-#define AIR_ACCELERATION 10.0f
-#define MAX_VELOCITY 4.0f
+#define ACCELERATION 7.0f
+#define AIR_ACCELERATION 6.0f
+#define MAX_VELOCITY 3.0f
 #define AIR_MAX_VELOCITY 0.5f
-#define GROUND_FRICTION 6.0f
+#define GROUND_FRICTION 4.0f
 #define STOP_SPEED 1.5f
 #define TURN_SPEED 3.0f
 #define PLAYER_HEIGHT 0.5f
@@ -180,7 +180,7 @@ void move(E_Map* map, Player* player, float dt)
   {
     player->velocity = (E_Vec2f){0, 0};
   }
-
+  
   player->camera.z += player->vertical_velocity * dt;
 
   E_Map_Sector* sector = player->camera.sector;
