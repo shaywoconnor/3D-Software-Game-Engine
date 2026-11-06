@@ -2,6 +2,8 @@
 
 3D Game written in custom cpu-rendered engine with Quake-style movement.
 
+![Movement demonstration](docs/bhop.gif)
+
 Using Build-engine like portals with convex sectors to efficiently render 3D maps on the CPU.
 
 Uses SDL for window creation, Input handling, and Multithreading, all game rendering is done from scratch in C using only the standard library.
