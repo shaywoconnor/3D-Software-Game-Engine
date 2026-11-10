@@ -1,19 +1,23 @@
 #ifndef APP_H
 #define APP_H
 
-#include "e_map.h"
 #include "platform.h"
 #include "render_pool.h"
 
+#define APP_WINDOW_TITLE "Game"
+#define APP_RENDER_WIDTH 752
+#define APP_RENDER_HEIGHT 452
+#define APP_WINDOW_SCALE 2
+#define APP_VSYNC 0
+
 struct App
 {
-  E_Map map;
   Platform platform;
   Render_Pool pool;
 };
 typedef struct App App;
 
-int app_init(App* app, const char* map_path, const char* title, int width, int height, int scale, int vsync);
+int app_init(App* app, const char* title, int width, int height, int scale, int vsync);
 void app_shutdown(App* app);
 
 #endif

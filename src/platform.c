@@ -33,6 +33,7 @@ int platform_init(Platform* platform, const char* title, int width, int height, 
     goto fail;
   }
   SDL_SetWindowRelativeMouseMode(platform->window, true);
+  platform->mouse_captured = true;
 
   platform->renderer = SDL_CreateRenderer(platform->window, NULL);
   if (!platform->renderer)
@@ -88,9 +89,24 @@ void platform_present(Platform* platform, const char* const* lines, int line_cou
 
   SDL_RenderPresent(platform->renderer);
 }
-void platform_set_mouse_captured(Platform* platform, int captured)
+
+void platform_set_mouse_captured(Platform* platform, bool captured)
 {
-  SDL_SetWindowRelativeMouseMode(platform->window, captured);
+  if (SDL_SetWindowRelativeMouseMode(platform->window, captured)) platform->mouse_captured = captured;
+}
+
+void platform_toggle_mouse_captured(Platform* platform)
+{
+  platform_set_mouse_captured(platform, !platform->mouse_captured);
+}
+
+#define PLATFORM_DEBUG_DELAY_MS 4
+
+void platform_debug_present(void* platform)
+{
+  SDL_PumpEvents();
+  platform_present(platform, NULL, 0);
+  SDL_Delay(PLATFORM_DEBUG_DELAY_MS);
 }
 
 uint64_t platform_time_ns(void)

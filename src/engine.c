@@ -30,19 +30,9 @@ static void build_shade_table(void)
   }
 }
 
-int e_init(E_Map* map)
+void e_init(void)
 {
   build_shade_table();
-
-  for (int i = 0; i < map->texture_count; i++)
-  {
-    if (!map->textures[i].bitmap && E_Map_Texture_Load(&map->textures[i]) != 0)
-    {
-      return -1;
-    }
-  }
-
-  return 0;
 }
 
 static uint32_t depth_shade(float z)
@@ -85,7 +75,6 @@ E_Map_Sector* get_camera_sector(const E_Map* map, const E_Vec2f pos)
   }
   return NULL;
 }
-
 
 E_Map_Sector* point_sector(const E_Map* map, const E_Vec2f point)
 {

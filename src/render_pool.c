@@ -3,33 +3,14 @@
 
 #include "render_pool.h"
 
-#define DEBUG_COLUMNS_PER_FRAME 1
 #define DEBUG_CLEAR_COLOUR 0xFFFF00FF
-#define DEBUG_DELAY 4
 
-struct Debug_View
+static void render_columns(const Render_Job* job, int x_start, int x_end)
 {
-  Platform* platform;
-  int calls;
-};
-typedef struct Debug_View Debug_View;
-
-static void debug_present(void* user)
-{
-  Debug_View* view = user;
-  view->calls++;
-  if (view->calls % DEBUG_COLUMNS_PER_FRAME) return;
-
-  SDL_PumpEvents();
-  platform_present(view->platform, NULL, 0);
-  SDL_Delay(DEBUG_DELAY);
-}
-
-static void render_columns(E_Map* map, const Camera* camera, Platform* platform, int x_start, int x_end)
-{
+  const Camera* camera = job->camera;
   e_render
   (
-    map,
+    job->map,
     camera->pos,
     camera->dir,
     camera->z,
@@ -37,9 +18,9 @@ static void render_columns(E_Map* map, const Camera* camera, Platform* platform,
     x_start,
     x_end,
     camera->sector,
-    platform->framebuffer,
-    platform->width,
-    platform->height,
+    job->target.pixels,
+    job->target.width,
+    job->target.height,
     camera->pitch
   );
 }
@@ -54,7 +35,11 @@ static int worker_main(void* data)
     SDL_WaitSemaphore(worker->start);
     if (pool->quit) return 0;
 
-    render_columns(pool->map, pool->camera, pool->platform, worker->x_start, worker->x_end);
+    int width = pool->job.target.width;
+    int x_start = worker->index * width / pool->count;
+    int x_end = (worker->index + 1) * width / pool->count;
+    render_columns(&pool->job, x_start, x_end);
+
     SDL_SignalSemaphore(pool->done);
   }
 }
@@ -78,7 +63,7 @@ void render_pool_shutdown(Render_Pool* pool)
   memset(pool, 0, sizeof(*pool));
 }
 
-int render_pool_init(Render_Pool* pool, int width)
+int render_pool_init(Render_Pool* pool)
 {
   memset(pool, 0, sizeof(*pool));
 
@@ -93,8 +78,7 @@ int render_pool_init(Render_Pool* pool, int width)
   {
     Worker* worker = &pool->workers[i];
     worker->pool = pool;
-    worker->x_start = i * width / count;
-    worker->x_end = (i + 1) * width / count;
+    worker->index = i;
 
     worker->start = SDL_CreateSemaphore(0);
     pool->count = i + 1;
@@ -112,32 +96,38 @@ fail:
   return -1;
 }
 
-double render_pool_frame(Render_Pool* pool, E_Map* map, const Camera* camera, Platform* platform, int debug)
+double render_pool_frame(Render_Pool* pool, const E_Map* map, const Camera* camera, Render_Target target, const Render_Debug* debug)
 {
-  size_t pixels = (size_t)platform->width * platform->height;
+  if (!pool || pool->count < 1 || !map || !camera || !target.pixels || target.width <= 0 || target.height <= 0)
+  {
+    fprintf(stderr, "render_pool_frame: invalid arguments\n");
+    return -1.0;
+  }
+
+  size_t pixels = (size_t)target.width * target.height;
   uint32_t clear = debug ? DEBUG_CLEAR_COLOUR : 0;
-  for (size_t i = 0; i < pixels; i++) platform->framebuffer[i] = clear;
+  for (size_t i = 0; i < pixels; i++) target.pixels[i] = clear;
 
   Uint64 start = SDL_GetPerformanceCounter();
 
   if (camera->sector)
   {
+    Render_Job job = {map, camera, target};
+
     if (debug)
     {
-      Debug_View debug_view = {platform, 0};
-      e_debug_hook = debug_present;
-      e_debug_user = &debug_view;
-      render_columns(map, camera, platform, 0, platform->width);
+      e_debug_hook = debug->hook;
+      e_debug_user = debug->user;
+      render_columns(&job, 0, target.width);
       e_debug_hook = NULL;
       e_debug_user = NULL;
     }
     else
     {
-      pool->map = map;
-      pool->camera = camera;
-      pool->platform = platform;
+      pool->job = job;
       for (int i = 0; i < pool->count; i++) SDL_SignalSemaphore(pool->workers[i].start);
       for (int i = 0; i < pool->count; i++) SDL_WaitSemaphore(pool->done);
+      pool->job = (Render_Job){0};
     }
   }
 

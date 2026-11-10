@@ -5,7 +5,7 @@
 
 #define STATS_INTERVAL_NS 500000000ull
 
-void stats_init(Frame_Stats* stats, uint64_t now)
+void stats_create(Frame_Stats* stats, uint64_t now)
 {
   memset(stats, 0, sizeof(*stats));
   stats->window_start = now;

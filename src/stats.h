@@ -13,7 +13,7 @@ struct Frame_Stats
 };
 typedef struct Frame_Stats Frame_Stats;
 
-void stats_init(Frame_Stats* stats, uint64_t now);
+void stats_create(Frame_Stats* stats, uint64_t now);
 int stats_record(Frame_Stats* stats, uint64_t now, double render_ms);
 
 #endif
